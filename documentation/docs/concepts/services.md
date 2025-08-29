@@ -601,3 +601,133 @@ export class TodoItemService extends NoOpQueryService<TodoItemEntity> {
 
 ```
 
+## Custom Services with Assemblers
+
+When creating a custom service that needs to use assemblers for DTO-to-Entity conversion, you have two approaches:
+
+### Approach 1: Extend AssemblerQueryService Directly
+
+If your service extends `AssemblerQueryService`, it already handles the DTO-to-Entity conversion internally:
+
+```ts title="todo-item/todo-item.service.ts"
+import { AssemblerQueryService } from '@ptc-org/nestjs-query-core';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TodoItemDTO } from './todo-item.dto';
+import { TodoItemEntity } from './todo-item.entity';
+import { TodoItemAssembler } from './todo-item.assembler';
+
+@QueryService(TodoItemDTO)
+export class TodoItemService extends AssemblerQueryService<TodoItemDTO, TodoItemEntity> {
+  constructor(
+    @InjectRepository(TodoItemEntity) repo: Repository<TodoItemEntity>,
+  ) {
+    // Create the entity service for database operations
+    const entityService = new TypeOrmQueryService(repo);
+    // Create the assembler for DTO conversion
+    const assembler = new TodoItemAssembler();
+    // Pass both to the parent AssemblerQueryService
+    super(assembler, entityService);
+  }
+
+  // Add your custom methods here
+  async customMethod(): Promise<TodoItemDTO> {
+    // Your custom logic
+  }
+}
+```
+
+:::warning
+**Important**: When using this approach, do NOT provide `AssemblerClass` in your resolver configuration. Your service already handles assembly internally.
+:::
+
+```ts title="todo-item/todo-item.module.ts"
+@Module({
+  imports: [
+    NestjsQueryGraphQLModule.forFeature({
+      imports: [TypeOrmModule.forFeature([TodoItemEntity])],
+      services: [TodoItemService],
+      resolvers: [
+        {
+          DTOClass: TodoItemDTO,
+          EntityClass: TodoItemEntity,
+          ServiceClass: TodoItemService, // Service handles assembly internally
+          // DO NOT include AssemblerClass here
+        }
+      ],
+    }),
+  ],
+})
+export class TodoItemModule {}
+```
+
+### Approach 2: Extend Base QueryService with External Assembler
+
+If your service only handles entity operations, let nestjs-query handle the assembly externally:
+
+```ts title="todo-item/todo-item-entity.service.ts"
+import { TypeOrmQueryService } from '@ptc-org/nestjs-query-typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TodoItemEntity } from './todo-item.entity';
+
+@QueryService(TodoItemEntity)
+export class TodoItemEntityService extends TypeOrmQueryService<TodoItemEntity> {
+  constructor(
+    @InjectRepository(TodoItemEntity) repo: Repository<TodoItemEntity>,
+  ) {
+    super(repo);
+  }
+
+  // Add your custom entity-level methods here
+  async customEntityMethod(): Promise<TodoItemEntity> {
+    // Your custom logic
+  }
+}
+```
+
+```ts title="todo-item/todo-item.module.ts"
+@Module({
+  imports: [
+    NestjsQueryGraphQLModule.forFeature({
+      imports: [TypeOrmModule.forFeature([TodoItemEntity])],
+      assemblers: [TodoItemAssembler],
+      services: [TodoItemEntityService],
+      resolvers: [
+        {
+          DTOClass: TodoItemDTO,
+          EntityClass: TodoItemEntity,
+          AssemblerClass: TodoItemAssembler, // Let nestjs-query handle assembly
+          ServiceClass: TodoItemEntityService, // Service only handles entities
+        }
+      ],
+    }),
+  ],
+})
+export class TodoItemModule {}
+```
+
+### Troubleshooting
+
+#### Error: "Nest can't resolve dependencies of the [DTO]AssemblerQueryService"
+
+**Cause**: This error occurs when you provide both `AssemblerClass` and a `ServiceClass` that already extends `AssemblerQueryService` in your resolver configuration. This causes nestjs-query to create a double-wrapped service.
+
+**Solution**: Remove `AssemblerClass` from your resolver configuration if your custom service already extends `AssemblerQueryService`.
+
+```ts
+// ❌ Incorrect - causes double-wrapping
+{
+  DTOClass: TodoItemDTO,
+  EntityClass: TodoItemEntity,
+  AssemblerClass: TodoItemAssembler, // Remove this
+  ServiceClass: TodoItemService,     // If this extends AssemblerQueryService
+}
+
+// ✅ Correct
+{
+  DTOClass: TodoItemDTO,
+  EntityClass: TodoItemEntity,
+  ServiceClass: TodoItemService, // Service handles assembly internally
+}
+

@@ -436,6 +436,52 @@ export class UserModule {}
 
 ```
 
+### Important: Avoiding Double-Wrapping
+
+:::warning
+**Never provide both `AssemblerClass` and a custom `ServiceClass` that already extends `AssemblerQueryService` in your resolver configuration.** This will cause dependency injection errors.
+:::
+
+When configuring resolvers, you have three valid options:
+
+#### Option 1: Use AssemblerClass with auto-generated service
+```ts
+{
+  DTOClass: UserDTO,
+  EntityClass: UserEntity,
+  AssemblerClass: UserAssembler,
+  // No ServiceClass - nestjs-query creates one automatically
+}
+```
+
+#### Option 2: Use custom ServiceClass that handles assembly
+```ts
+{
+  DTOClass: UserDTO,
+  EntityClass: UserEntity,
+  ServiceClass: UserService, // Extends AssemblerQueryService
+  // No AssemblerClass - service already handles assembly
+}
+```
+
+#### Option 3: Use custom ServiceClass with external assembly
+```ts
+{
+  DTOClass: UserDTO,
+  EntityClass: UserEntity,
+  AssemblerClass: UserAssembler,
+  ServiceClass: UserEntityService, // Extends base QueryService (not AssemblerQueryService)
+}
+```
+
+#### Common Error
+
+If you see this error:
+```
+Nest can't resolve dependencies of the [DTO]AssemblerQueryService
+```
+
+You likely have both `AssemblerClass` and a `ServiceClass` that extends `AssemblerQueryService`. Remove the `AssemblerClass` from your configuration.
 
 ### Manual Resolver
 
