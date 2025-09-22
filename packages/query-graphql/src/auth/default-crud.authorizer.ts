@@ -55,13 +55,16 @@ export function createDefaultAuthorizer<DTO>(
       relationName: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       context: any,
-      authorizationContext: AuthorizationContext
+      authorizationContext: AuthorizationContext,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      parent?: any
     ): Promise<Filter<unknown>> {
       if (this.customAuthorizer && typeof this.customAuthorizer.authorizeRelation === 'function') {
         const filterFromCustomAuthorizer = await this.customAuthorizer.authorizeRelation(
           relationName,
           context,
-          authorizationContext
+          authorizationContext,
+          parent
         )
         if (filterFromCustomAuthorizer) return filterFromCustomAuthorizer
       }

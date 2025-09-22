@@ -68,7 +68,7 @@ const ReadOneRelationMixin =
         }
         const authFilter = relation.auth
           ? await relation.auth?.authorize(context, authContext)
-          : ((await this[authorizerKey]?.authorizeRelation(baseNameLower, context, authContext)) ??
+          : ((await this[authorizerKey]?.authorizeRelation(baseNameLower, context, authContext, dto)) ??
             (await this[relationAuthorizerKey]?.authorize(context, authContext)))
         return DataLoaderFactory.getOrCreateLoader(
           context,
@@ -155,7 +155,7 @@ const ReadManyRelationMixin =
         }
         const authFilter = relation.auth
           ? await relation.auth?.authorize(context, authContext)
-          : ((await this[authorizerKey]?.authorizeRelation(baseNameLower, context, authContext)) ??
+          : ((await this[authorizerKey]?.authorizeRelation(baseNameLower, context, authContext, dto)) ??
             (await this[relationAuthorizerKey]?.authorize(context, authContext)))
         const relationQuery = await transformAndValidate(RelationQA, q)
         const relationLoader = DataLoaderFactory.getOrCreateLoader(

@@ -30,7 +30,9 @@ export interface CustomAuthorizer<DTO> {
     relationName: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     context: any,
-    authorizerContext: AuthorizationContext
+    authorizerContext: AuthorizationContext,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    parent?: any
   ): Promise<Filter<unknown> | undefined>
 }
 
@@ -42,6 +44,8 @@ export interface Authorizer<DTO> extends CustomAuthorizer<DTO> {
     relationName: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     context: any,
-    authorizerContext: AuthorizationContext
+    authorizerContext: AuthorizationContext,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    parent?: any
   ): Promise<Filter<Relation> | undefined>
 }

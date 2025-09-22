@@ -87,7 +87,7 @@ const AggregateRelationMixin =
         }
         const authFilter = relation.auth
           ? await relation.auth?.authorize(context, authContext)
-          : ((await this[authorizerKey]?.authorizeRelation(baseNameLower, context, authContext)) ??
+          : ((await this[authorizerKey]?.authorizeRelation(baseNameLower, context, authContext, dto)) ??
             (await this[relationAuthorizerKey]?.authorize(context, authContext)))
 
         return loader.load({
